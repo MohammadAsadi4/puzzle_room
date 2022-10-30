@@ -1,0 +1,6 @@
+positions of the rooms in floors of the building: 
+basement, warehouse, [[10, 0], [5, 0], [5, 6], [10, 6]]
+basement, facility, [[0, 10], [4, 10], [4, 5], [0, 5]]
+ground_floor, hall, [[10, 0], [5, 0], [5, 10], [10, 10]]
+ground_floor, kitchen, [[0, 0], [0, 4], [6, 4], [6, 0]]
+first_floor, studyroom, [[0, 0], [0, 5], [6, 5], [6, 0]]
