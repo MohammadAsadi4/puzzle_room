@@ -177,14 +177,19 @@
 # print(eval('2<1'))
 # list = [1,3,4,5]
 # print(max(list))
-a = [[[1],[2]],[[3],[4]]]
-b = [[1],[5],[6]]
-i = 0
+# a = [[[1],[2]],[[3],[4]]]
+# b = [[1],[5],[6]]
+# i = 0
 
-for i in range(len(b)):
-    j = 0
-    for j in range(len(a)):
-        if b[i] in a[j]:
-            print(f"found {b[i]}")
-        else:
-            print("not found")
+# for i in range(len(b)):
+#     j = 0
+#     for j in range(len(a)):
+#         if b[i] in a[j]:
+#             print(f"found {b[i]}")
+#         else:
+#             print("not found")
+i = 2
+if i > 0 and i <3:
+    print('aa')
+elif i>1 and i<4 :
+    print('bb')    

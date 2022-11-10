@@ -38,26 +38,30 @@ class Floor(map):
 
         rooms = [] #list of sorted room based on room`s area will store here
         #four corners of a floor
-        corners = [[0,0], [0,10], [10,0], [10,10]]
+        corners = [[0,0], [10,0], [0,10], [10,10]]
+        used_corners = []
         room_whole_inside_points = {'room':[], 'walls':[], 'inside_points':[], 'whole_points':[]}
+        inside_corners = []
 
         shuffle(corners)#shufle the corners so each room will place in random positions
+        inside_corners = corners.copy()
 
         def update_corners(rp): # update corners after placing a room in floor
             i = 0
-            nonlocal corners
+            nonlocal inside_corners
 
             ix = Floor.get_room_position(room_position,'room').index(rp)
             pos = Floor.get_room_position(room_position,'positions')
             room_corners = pos[ix]
             i = 0
+            print(f"room corners are {room_corners}\n")
             while i < (len(room_corners)):
-                if room_corners[i] not in corners:
-                    corners.append(room_corners[i])
+                if room_corners[i] not in inside_corners:
+                    inside_corners.append(room_corners[i])
                 else:
-                    corners.remove(room_corners[i])
+                    inside_corners.remove(room_corners[i])
                 i+=1
-
+            print(f"inside corners after update are {inside_corners}\n")
 
         def check_room_fit (floor, room):
         #check if current room fits in lefted_space of floor after placing previous rooms
@@ -67,26 +71,28 @@ class Floor(map):
             j = 1
             equal_length = list()
             equal_width = list()
-            nonlocal corners
+            nonlocal inside_corners
             length = list()
             width = list()
             l_mul_w = {'index' : [], 'data' :[], 'mul' :[]}
             left_space = {'index' : [], 'data': [], 'pack':[]}
 
-            for i in range(len(corners)):
-                for j in range(len(corners)):
-                    if (corners[i][0] == corners[j][0]) and corners[j] not in equal_length:
-                            equal_length.append(corners[j])
-                    if (corners[i][1] == corners[j][1]) and corners[j] not in equal_width:
-                            equal_width.append(corners[j])
+            for i in range(len(inside_corners)):
+                for j in range(len(inside_corners)):
+                    if (inside_corners[i][0] == inside_corners[j][0]) and inside_corners[j] not in equal_length:
+                            equal_length.append(inside_corners[j])
+                    if (inside_corners[i][1] == inside_corners[j][1]) and inside_corners[j] not in equal_width:
+                            equal_width.append(inside_corners[j])
             i = 0
-            # print(f"equal width : {equal_width}\n")
-            # print(f"equal length : {equal_length}\n")
-            for i in range(0 , len(equal_length), 2):# calculatin all sides of lefted space
-                length.append(abs(equal_width[i][0] - equal_width[i+1][0]))
+            print(f"equal width : {equal_width}\n")
+            print(f"equal length : {equal_length}\n")
+            for i in range(0 , len(equal_length), 2) :# calculatin all sides of lefted space
+                if i in range(len(equal_length)) and i+1 in range(len(equal_length)):
+                    length.append(abs(equal_width[i][0] - equal_width[i+1][0]))
             i = 0
-            for i in range(0, len(equal_width), 2):
-                width.append(abs(equal_length[i][1] - equal_length[i+1][1]))
+            for i in range(0, len(equal_width), 2) :
+                if i in range(len(equal_width)) and i+1 in range(len(equal_width)):
+                    width.append(abs(equal_length[i][1] - equal_length[i+1][1]))
             i = 0
             j = 0
             for i in range(len(length)):# calculates all possible forms of deviding irregular left space into regular shapes(squre or rectangle)
@@ -108,21 +114,33 @@ class Floor(map):
             for i in range(len(floor_rooms)):# calculating used space of current floor after placing rooms
                 f_used_area = f_used_area + rooms_parts_dim.get(floor_rooms[i])[0] * rooms_parts_dim.get(floor_rooms[i])[1]
             f_remain_area = 100 - f_used_area
-            # print(f"remaining area is {f_remain_area}\n")
-            # print(f"l*w details: {l_mul_w}\n")
+            print(f"remaining area is {f_remain_area}\n")
+            print(f"l*w details: {l_mul_w}\n")
             i = 0
-            for i in range(len(l_mul_w.get('index'))):# makes sets of lefted space shapes that their area are equal to remaining area of the floor
+            for i in range(len(l_mul_w.get('index'))):# makes sets of lefted space shapes(it has 1, 2 or 3 values) that their area are equal to remaining area of the floor
                 j = 1
                 for j in range(len(l_mul_w.get('index'))):
                     k = 2
                     for k in range(len(l_mul_w.get('index'))):
-                        if l_mul_w.get('mul')[i] == f_remain_area or l_mul_w.get('mul')[i] + l_mul_w.get('mul')[j] == f_remain_area or l_mul_w.get('mul')[i] + l_mul_w.get('mul')[j] + l_mul_w.get('mul')[k] == f_remain_area :
+                        if l_mul_w.get('mul')[i] == f_remain_area :
+                            if (l_mul_w.get('data')[i]) not in left_space.get('data') :
+                                left_space.get('index').append(l_mul_w.get('index')[l_mul_w.get('data').index(l_mul_w.get('data')[i])])
+                                left_space.get('data').append(l_mul_w.get('data')[i])
+                                left_space.get('pack').append([l_mul_w.get('data')[i]])
+
+                        if l_mul_w.get('mul')[i] + l_mul_w.get('mul')[j] == f_remain_area :
+                            if (l_mul_w.get('data')[i]  or l_mul_w.get('data')[j]) not in left_space.get('data') :
+                                left_space.get('index').append(l_mul_w.get('index')[l_mul_w.get('data').index(l_mul_w.get('data')[i])])
+                                left_space.get('data').append(l_mul_w.get('data')[i])
+                                left_space.get('pack').append([l_mul_w.get('data')[i], l_mul_w.get('data')[j]])
+
+                        if l_mul_w.get('mul')[i] + l_mul_w.get('mul')[j] + l_mul_w.get('mul')[k] == f_remain_area :
                             if (l_mul_w.get('data')[i]  or l_mul_w.get('data')[j] or l_mul_w.get('data')[k]) not in left_space.get('data') :
                                 left_space.get('index').append(l_mul_w.get('index')[l_mul_w.get('data').index(l_mul_w.get('data')[i])])
                                 left_space.get('data').append(l_mul_w.get('data')[i])
                                 left_space.get('pack').append([l_mul_w.get('data')[i], l_mul_w.get('data')[j], l_mul_w.get('data')[k]])
 
-            #print(f"left space details: {left_space}\n")
+            print(f"left space details: {left_space}\n")
             i = 0
             for i in range(len(left_space.get('index'))):#checks wether current room dimentions fits in atleast one of the possible lefted space regular shapes
                 #print(f"x of {room} is :{rooms_parts_dim.get(room)[0]}\ny of {room} is :{rooms_parts_dim.get(room)[1]}\nx of devided left space is {left_space.get('data')[i][0]}\ny of devided left space is {left_space.get('data')[i][1]}\n")
@@ -182,10 +200,10 @@ class Floor(map):
             chk = []
             chk.clear()
             collision_points = {'collision' : [] , 'whole_collision' : [], 'wall_collision' : []}# here we store collision point and points that collision point  collide with
+
             collision_points.get('collision').clear()
             collision_points.get('whole_collision').clear()
             collision_points.get('wall_collision').clear()
-
             ix = whole_points.get('room').index(room)# index of the given room in room_whole_inside_points dictionary
             wh_points = whole_points.get('whole_points')# all inside points of created rooms -- wh_points[ix] are inside points of current room
             wall_points = whole_points.get('walls')# all wall points of created rooms -- wall_poin[ix] are walls of current room
@@ -195,7 +213,7 @@ class Floor(map):
             # print(f"whole points of {room} in room_whole_inside_points dict are {wh_points[ix]} \n")
 
             i = 0
-            #(we lower end of range by one unit to eliminate checking a room with intself (in every for loop))
+            #(we lower end of range by one unit to eliminate checking a room with itself (in every for loop))
             for i in range(len(wall_points[ix]) - 1):#check if walls of current room collides with other walls in the floor
                 j = 0
                 for j in range(len(wall_points) - 1):
@@ -205,7 +223,7 @@ class Floor(map):
                             collision_points.get('wall_collision').append(wall_points[j])
             #print(f"checking wall collision of {room} : {collision_points}\n")
             i = 0
-            for i in range(len(wh_points[ix]) - 1):#check if whole points of current romm collides with other rooms in the floor
+            for i in range(len(wh_points[ix]) - 1):#check if whole points of current romm collides with whole points of other rooms in the floor
                 j = 0
                 for j in range(len(wh_points) - 1 ):
                     if wh_points[ix][i] in wh_points[j] :
@@ -227,7 +245,7 @@ class Floor(map):
 
             if True in chk :
                 print(f"room {room} collides with others")
-                print(f"collision details are: \n points {collision_points.get('collision')}\n collides with \n{collision_points.get('whole_collision')} \n")
+                #print(f"collision details are: \n points {collision_points.get('collision')}\n collides with \n{collision_points.get('whole_collision')} \n")
                 rollback_room_corners_insidepoints(room)
                 return True
             else :
@@ -237,16 +255,23 @@ class Floor(map):
         def rollback_room_corners_insidepoints(room):
         # when a recently created room collides with other ones we should delet
         # this room and its corner as well as whole point of this room
-            nonlocal room_whole_inside_points, corners
+            nonlocal room_whole_inside_points, inside_corners, corners
 
             r_ix = Floor.get_room_position(room_position, 'room').index(room)
+
             i = 0
             for i in range(4):# removing corners of room from corner list
-                if Floor.get_room_position(room_position, 'positions')[r_ix][i] in corners:
-                    corners.remove(Floor.get_room_position(room_position, 'positions')[r_ix][i])
+                if Floor.get_room_position(room_position, 'positions')[r_ix][i] in inside_corners:# and Floor.get_room_position(room_position, 'positions')[r_ix][i] not in corners:
+                    inside_corners.remove(Floor.get_room_position(room_position, 'positions')[r_ix][i])
+                    print(f"corner {Floor.get_room_position(room_position, 'positions')[r_ix][i]} removed from {inside_corners}\n")
+                else:
+                    inside_corners.append(Floor.get_room_position(room_position, 'positions')[r_ix][i])
+                    print(f"corner {Floor.get_room_position(room_position, 'positions')[r_ix][i]} added to {inside_corners}\n")
+            print(f"inside corners after rolling back are{inside_corners}\n")
             Floor.get_room_position(room_position, 'positions').pop(r_ix)# removing corners from room position dict
             Floor.get_room_position(room_position, 'room').remove(room)# removing collided room from room position dict
             Floor.get_room_position(room_position, 'floor').pop(r_ix)
+
             in_ix = room_whole_inside_points.get('room').index(room)
             room_whole_inside_points.get('whole_points').pop(in_ix)# removing whole points from room_whole_inside_points dict
             room_whole_inside_points.get('inside_points').pop(in_ix) # removing inside points from room_whole_inside_points dict
@@ -254,85 +279,107 @@ class Floor(map):
             room_whole_inside_points.get('room').remove(room)# removing collided room from room_whole_inside_points dict
 
 
-        def create_rooms(floor_name, rooms, corners, corner_no, next_corner = None) :
-        # placing rooms(order from big to small) based on the floor name
+        def create_rooms(floor_name, rooms, corners, corner_no, next_corner = None, collide_try = None, try_no = None) :
+        # placing rooms(order from big to small) based on floor name
 
             left_middle = [5,0]
             right_middle = [5,10]
-            nonlocal room_whole_inside_points
+            nonlocal room_whole_inside_points, used_corners
 
             if next_corner != None and next_corner + 1 in range(len(corners)):
-                i = corner_no
                 j = next_corner + 1
-                print(f"j is provided so i is now:{i} and j is now:{j} \n")
-            else:
-                i = corner_no
+                print(f"next corner is provided so corner no is:{corner_no} and next corner is now:{j} \n")
+            elif next_corner == None:
                 j = corner_no
-                print(f"i is euql to j and is {i} \n")
+            i = 0
+            if corner_no < len(rooms) :# checks if rooms fits in the remaining space of floor
+                chk_room_fit = check_room_fit(floor_name, rooms[corner_no])
+                if chk_room_fit == False : # checks if room fits in floor
+                    print(f"{rooms[corner_no]} does not fit in {floor_name}.\n")
 
-            if (corners[j][0] - left_middle[0] > 0) or (corners[j][1] - left_middle[1] > 0):
+                else:
+                    if collide_try == 1 : # swaping room dimentions and check if room fits or not
+                        if try_no < 1 :
+                            tmp = rooms_parts_dim.get(rooms[corner_no])[0]
+                            rooms_parts_dim.get(rooms[corner_no])[0] = rooms_parts_dim.get(rooms[corner_no])[1]
+                            rooms_parts_dim.get(rooms[corner_no])[1] = tmp
+                        i +=1
+                        print(f"try number {i}:new {rooms[corner_no]} dimentions are ({rooms_parts_dim.get(rooms[corner_no])[0] , rooms_parts_dim.get(rooms[corner_no])[1]})\n")
 
-                Floor.set_room_position(room_position, 'floor', floor_name)
-                Floor.set_room_position(room_position, 'room', rooms[i])
-                Floor.set_room_position(room_position, 'positions', [corners[j], [abs(corners[j][0] - rooms_parts_dim.get(rooms[i])[0]), corners[j][1]],
-                [abs(corners[j][0] - rooms_parts_dim.get(rooms[i])[0]), abs(corners[j][1] - rooms_parts_dim.get(rooms[i])[1])],
-                [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[i])[1])]])
+                    print(f"corner {corners[j]} is selected for creating room {rooms[corner_no]}\n")
 
-            elif (corners[j][0] - right_middle[0] > 0) or (corners[j][1] - right_middle[1] > 0):
+                    if (corners[j][0] - left_middle[0] > 0) or (corners[j][1] - left_middle[1] > 0):
 
-                Floor.set_room_position(room_position, 'floor', floor_name)
-                Floor.set_room_position(room_position, 'room', rooms[i])
-                Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[i])[1])],
-                [abs(corners[j][0] - rooms_parts_dim.get(rooms[i])[0]), abs(corners[j][1] - rooms_parts_dim.get(rooms[i])[1])],
-                [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[i])[1])]])
+                        Floor.set_room_position(room_position, 'floor', floor_name)
+                        Floor.set_room_position(room_position, 'room', rooms[corner_no])
+                        Floor.set_room_position(room_position, 'positions', [corners[j], [abs(corners[j][0] - rooms_parts_dim.get(rooms[corner_no])[0]), corners[j][1]],
+                        [abs(corners[j][0] - rooms_parts_dim.get(rooms[corner_no])[0]), abs(corners[j][1] - rooms_parts_dim.get(rooms[corner_no])[1])],
+                        [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[corner_no])[1])]])
 
-            elif (corners[j][0] - left_middle[0] < 0) or (corners[j][1] - left_middle[1] < 0):
+                    elif (corners[j][0] - right_middle[0] > 0) or (corners[j][1] - right_middle[1] > 0):
 
-                Floor.set_room_position(room_position, 'floor', floor_name)
-                Floor.set_room_position(room_position, 'room', rooms[i])
-                Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], corners[j][1] + rooms_parts_dim.get(rooms[i])[1]],
-                [corners[j][0] + rooms_parts_dim.get(rooms[i])[0], corners[j][1] + rooms_parts_dim.get(rooms[i])[1]] ,
-                [corners[j][0] + rooms_parts_dim.get(rooms[i])[0], corners[j][1]]])
+                        Floor.set_room_position(room_position, 'floor', floor_name)
+                        Floor.set_room_position(room_position, 'room', rooms[corner_no])
+                        Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[corner_no])[1])],
+                        [abs(corners[j][0] - rooms_parts_dim.get(rooms[corner_no])[0]), abs(corners[j][1] - rooms_parts_dim.get(rooms[corner_no])[1])],
+                        [corners[j][0], abs(corners[j][1] - rooms_parts_dim.get(rooms[corner_no])[1])]])
 
-            elif (corners[j][0] - right_middle[0] < 0) or (corners[j][1] - right_middle[1] < 0):
+                    elif (corners[j][0] - left_middle[0] < 0) or (corners[j][1] - left_middle[1] < 0):
 
-                Floor.set_room_position(room_position, 'floor', floor_name)
-                Floor.set_room_position(room_position, 'room', rooms[i])
-                Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], corners[j][1] + rooms_parts_dim.get(rooms[i])[1]],
-                [corners[j][0] + rooms_parts_dim.get(rooms[i])[0], corners[j][1] + rooms_parts_dim.get(rooms[i])[1]] ,
-                [corners[j][0] + rooms_parts_dim.get(rooms[i])[0], corners[j][1]]])
+                        Floor.set_room_position(room_position, 'floor', floor_name)
+                        Floor.set_room_position(room_position, 'room', rooms[corner_no])
+                        Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], corners[j][1] + rooms_parts_dim.get(rooms[corner_no])[1]],
+                        [corners[j][0] + rooms_parts_dim.get(rooms[corner_no])[0], corners[j][1] + rooms_parts_dim.get(rooms[corner_no])[1]] ,
+                        [corners[j][0] + rooms_parts_dim.get(rooms[corner_no])[0], corners[j][1]]])
 
-            update_corners(rooms[i])# update corners after successfull placement of room
-            #print(f"room position before fit and collide check is: {room_position}\n")
-            print(f"corners after update are : {corners}\n")
-            room_whole_inside_points.get('room').append(rooms[i])# appending current room inside points to room_whole_inside_points dict
-            room_whole_inside_points.get('walls').append(room_points(rooms[i])[0])
-            room_whole_inside_points.get('inside_points').append(room_points(rooms[i])[1])
-            room_whole_inside_points.get('whole_points').append(room_points(rooms[i])[2])
+                    elif (corners[j][0] - right_middle[0] < 0) or (corners[j][1] - right_middle[1] < 0):
+
+                        Floor.set_room_position(room_position, 'floor', floor_name)
+                        Floor.set_room_position(room_position, 'room', rooms[corner_no])
+                        Floor.set_room_position(room_position, 'positions', [corners[j], [corners[j][0], corners[j][1] + rooms_parts_dim.get(rooms[corner_no])[1]],
+                        [corners[j][0] + rooms_parts_dim.get(rooms[corner_no])[0], corners[j][1] + rooms_parts_dim.get(rooms[corner_no])[1]] ,
+                        [corners[j][0] + rooms_parts_dim.get(rooms[corner_no])[0], corners[j][1]]])
 
 
-            print(f"room positions after fit and collide check is: {room_position}\n")
+                    update_corners(rooms[corner_no])# update corners after successfull placement of room
+
+                    # appending current room inside points to room_whole_inside_points dict
+                    room_whole_inside_points.get('room').append(rooms[corner_no])
+                    room_whole_inside_points.get('walls').append(room_points(rooms[corner_no])[0])
+                    room_whole_inside_points.get('inside_points').append(room_points(rooms[corner_no])[1])
+                    room_whole_inside_points.get('whole_points').append(room_points(rooms[corner_no])[2])
+
+
+                    try_no = 0
+                    if corner_no > 0 and corner_no in range(len(corners)) and j in range(len(corners)) :# checks if dimentions of current room collides with other rooms
+                        collide_chk = collide_check(rooms[corner_no], room_whole_inside_points)# here we can get the index of room that collides with others
+                        if collide_chk == True:
+
+                            create_rooms(floor_name, rooms, corners, corner_no, j, 1, try_no)
+
+                    print(f"room positions after collision check is: {room_position}\n")
             #print(f"returned values from create_room function are: {chk_room_fit , collide_chk, i, j}\n")
-            return  i, j
+            #return  i, j
 
         # start of creation of floor
         #   start of creation of biggest room
 
         #j = -1
-        chk_room_fit = True
-        collide_chk = False
+        # chk_room_fit = True
+        # collide_chk = False
 
-        result = (0, None)
+        #result = (0, None)
         rooms = Floor.floor_room_sorter(floor_name)# sort rooms of a floor based on their size (big to small)
         i = 0
         j = None
         if (floor_name in ['basement', 'ground_floor', 'first_floor']) : #and result[0] :
             #print(f"i is {i} , check_room_fit is {ch}")
-            while i in range(len(rooms)) and chk_room_fit == True and collide_chk == False :
+            while i in range(len(rooms)): #and chk_room_fit == True and collide_chk == False :
 
-                print(f"calling create_room methode with values : {floor_name, rooms, corners, i, j}\n")
-                result = create_rooms(floor_name, rooms, corners, i, j)
-                print(f"returned result are(collision not happend): {result, chk_room_fit, collide_chk}\n")
+                #print(f"calling create_room methode with values : {floor_name, rooms, corners, i, j}\n")
+                create_rooms(floor_name, rooms, corners, i, j)
+                #result = create_rooms(floor_name, rooms, corners, i, j)
+                #print(f"returned result are(collision not happend): {result, chk_room_fit, collide_chk}\n")
                      # else :# collide has happened. system tries to create that room with another corner from corners list
                      #     print(f"returned result from create_room function are(collision happend): {result}\n")
                      #     i = result[0]
@@ -341,19 +388,19 @@ class Floor(map):
                      #     print(f"calling create_room methode with values : {floor_name, rooms, corners, i, j}\n")
                      #     result = create_rooms(floor_name, rooms, corners, i, j)# here we use optional parameter(j). by setting j we try ro create room with an other corner
 
-                if i < len(rooms) :# checks if rooms fits in the remaining space of floor
-                    chk_room_fit = check_room_fit(floor_name, rooms[i])
-                    if chk_room_fit == False : # checks if room fits in floor
-                        print(f"{rooms[i]} does not fit in {floor_name}.\n")
-                    elif i > 0 :# checks if dimentions of current room collides with other rooms
-                        collide_chk = collide_check(rooms[i], room_whole_inside_points)# here we can get the index of room that collides with others
-                        while  collide_chk == True and j in range(len(corners)) :# checks if current room collides with other rooms created before
-                            print(f"returned result are(collision happend): {result, chk_room_fit, collide_chk}\n")
-                            i = result[0]
-                            j = result[1]
-                            print(f"collision index is {j}\n")
-                            print(f"calling create_room methode with values (collision happend) : {floor_name, rooms, corners, i, j}\n")
-                            result = create_rooms(floor_name, rooms, corners, i, j)# here we use optional parameter(j). by setting j we try ro create room with an other corner
+                # if i < len(rooms) :# checks if rooms fits in the remaining space of floor
+                #     chk_room_fit = check_room_fit(floor_name, rooms[i])
+                #     if chk_room_fit == False : # checks if room fits in floor
+                #         print(f"{rooms[i]} does not fit in {floor_name}.\n")
+                #     elif i > 0 :# checks if dimentions of current room collides with other rooms
+                #         collide_chk = collide_check(rooms[i], room_whole_inside_points)# here we can get the index of room that collides with others
+                #         while  collide_chk == True and j in range(len(corners)) :# checks if current room collides with other rooms created before
+                #             print(f"returned result are(collision happend): {result, chk_room_fit, collide_chk}\n")
+                #             i = result[0]
+                #             j = result[1]
+                #             print(f"collision index is {j}\n")
+                #             print(f"calling create_room methode with values (collision happend) : {floor_name, rooms, corners, i, j}\n")
+                #             result = create_rooms(floor_name, rooms, corners, i, j)# here we use optional parameter(j). by setting j we try ro create room with an other corner
 
                  #else:
 
@@ -433,6 +480,7 @@ class Floor(map):
         sorted_floor = []
         for i in range(len(room_area)):
             sorted_floor.append(room_area[i]['room'])
+
         return sorted_floor
 
 
